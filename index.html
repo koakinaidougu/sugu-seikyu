@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>請求書作成 無料・登録不要「スグ請求」｜源泉徴収・インボイス自動計算、データはブラウザ保存</title>
+<meta name="description" content="会員登録なしで今すぐ請求書をPDF作成。源泉徴収10.21%（100万円超の段階計算対応）と消費税・インボイス税率区分を自動計算。データはあなたのブラウザにのみ保存され、サーバーに送信されません。">
+<meta property="og:title" content="請求書作成 無料・登録不要「スグ請求」">
+<meta property="og:description" content="源泉徴収・インボイスを自動計算。登録不要・データはブラウザ保存のみで、サーバーに送信されません。">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://koakinaidougu.github.io/sugu-seikyu/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2216%22 fill=%22%232a6f6f%22/><text x=%2250%22 y=%2266%22 font-size=%2256%22 text-anchor=%22middle%22 fill=%22white%22 font-family=%22sans-serif%22>請</text></svg>">
+<link rel="stylesheet" href="style.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "スグ請求",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Web",
+  "description": "登録不要・完全ローカルで動作する請求書作成ツール。源泉徴収とインボイス税率区分を自動計算します。",
+  "offers": [
+    { "@type": "Offer", "price": "0", "priceCurrency": "JPY", "name": "無料版" },
+    { "@type": "Offer", "price": "980", "priceCurrency": "JPY", "name": "Pro版アンロックコード" }
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "データはどこに保存されますか？",
+      "acceptedAnswer": { "@type": "Answer", "text": "入力したデータはすべてお使いのブラウザのlocalStorageにのみ保存され、サーバーには一切送信されません。" } },
+    { "@type": "Question", "name": "会員登録は必要ですか？",
+      "acceptedAnswer": { "@type": "Answer", "text": "不要です。ページを開いてすぐに請求書の作成を始められます。" } },
+    { "@type": "Question", "name": "スマートフォンでも使えますか？",
+      "acceptedAnswer": { "@type": "Answer", "text": "使えます。画面幅に応じてレイアウトが自動的に切り替わります。印刷・PDF保存はブラウザの印刷機能をご利用ください。" } },
+    { "@type": "Question", "name": "源泉徴収税額はどう計算していますか？",
+      "acceptedAnswer": { "@type": "Answer", "text": "税抜合計が100万円以下なら10.21%、100万円を超える部分は20.42%で計算する段階計算式に対応しています。" } },
+    { "@type": "Question", "name": "Pro版とは何ですか？",
+      "acceptedAnswer": { "@type": "Answer", "text": "見積書・納品書・領収書への切替、取引先・履歴の無制限保存、自動採番、ロゴ挿入などが使える買い切り版です。設定タブからアンロックコードを購入・入力できます。" } },
+    { "@type": "Question", "name": "作成したデータが消えないか心配です",
+      "acceptedAnswer": { "@type": "Answer", "text": "ブラウザのデータを消去すると内容も消えます。設定タブのバックアップ機能（Pro）でJSONファイルに書き出し、いつでも復元できます。" } }
+  ]
+}
+</script>
+</head>
+<body>
+<div id="save-banner" class="save-banner" hidden>この環境ではデータを保存できません（プライベートブラウジング等）。作成・印刷は引き続き利用できます。</div>
+
+<header class="app-header">
+  <div class="app-title">スグ請求 <span class="app-tagline">登録不要・完全ローカルの請求書作成</span></div>
+  <div class="pro-status">
+    <span id="pro-badge" class="pro-badge" hidden>Pro✓</span>
+    <button id="btn-open-pro" type="button" class="btn btn-accent">Proにする</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab-btn" data-tab="create" role="tab" aria-selected="true">作成</button>
+  <button class="tab-btn" data-tab="history" role="tab" aria-selected="false">履歴</button>
+  <button class="tab-btn" data-tab="clients" role="tab" aria-selected="false">取引先</button>
+  <button class="tab-btn" data-tab="settings" role="tab" aria-selected="false">設定</button>
+</nav>
+
+<main>
+<!-- ============ 作成タブ ============ -->
+<section id="view-create" class="view" data-view="create">
+  <div class="create-layout">
+    <div class="form-pane">
+
+      <div class="field-group">
+        <label for="f-doctype">帳票種別</label>
+        <select id="f-doctype">
+          <option value="invoice">請求書</option>
+          <option value="estimate">見積書 🔒</option>
+          <option value="delivery">納品書 🔒</option>
+          <option value="receipt">領収書 🔒</option>
+        </select>
+        <button id="btn-convert-to-invoice" type="button" class="btn btn-small" hidden>この見積書を請求書に変換</button>
+      </div>
+
+      <fieldset class="field-group">
+        <legend>宛先</legend>
+        <select id="f-client-select">
+          <option value="">-- 保存済みの取引先から選択 --</option>
+        </select>
+        <label for="f-client-name">会社名・氏名</label>
+        <input id="f-client-name" type="text" placeholder="株式会社サンプル">
+        <label for="f-client-honorific">敬称</label>
+        <select id="f-client-honorific">
+          <option value="御中">御中</option>
+          <option value="様">様</option>
+          <option value="">（なし）</option>
+        </select>
+        <label for="f-client-zip">郵便番号</label>
+        <input id="f-client-zip" type="text" placeholder="150-0001">
+        <label for="f-client-address">住所</label>
+        <input id="f-client-address" type="text" placeholder="東京都渋谷区…">
+        <label for="f-client-person">ご担当者</label>
+        <input id="f-client-person" type="text" placeholder="（任意）">
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>日付・番号</legend>
+        <label for="f-issue-date">発行日</label>
+        <input id="f-issue-date" type="date">
+        <label for="f-due-date">支払期限（見積書は有効期限）</label>
+        <input id="f-due-date" type="date">
+        <label for="f-doc-no">文書番号</label>
+        <input id="f-doc-no" type="text" placeholder="INV-2026-0001">
+        <button id="btn-auto-number" type="button" class="btn btn-small">自動採番 🔒</button>
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>品目</legend>
+        <table id="items-table" class="items-table">
+          <thead>
+            <tr><th>品名</th><th>数量</th><th>単価</th><th>税率</th><th></th></tr>
+          </thead>
+          <tbody id="items-tbody"></tbody>
+        </table>
+        <button id="btn-add-item" type="button" class="btn btn-small">＋ 品目を追加</button>
+        <p id="items-warning" class="warning-text" hidden>品目が多いため印刷が2枚になる可能性があります。</p>
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>オプション</legend>
+        <label class="inline-check"><input id="f-withholding" type="checkbox"> 源泉徴収を計算する</label>
+        <div class="radio-row">
+          <label><input type="radio" name="taxmode" value="excl" id="f-taxmode-excl" checked> 外税（税抜金額を入力）</label>
+          <label><input type="radio" name="taxmode" value="incl" id="f-taxmode-incl"> 内税（税込金額を入力）</label>
+        </div>
+      </fieldset>
+
+      <fieldset class="field-group">
+        <legend>振込先・備考</legend>
+        <select id="f-bank-select">
+          <option value="">-- 振込先を選択 --</option>
+        </select>
+        <label for="f-note">備考</label>
+        <textarea id="f-note" rows="2" placeholder="（任意）"></textarea>
+      </fieldset>
+
+      <div class="action-row">
+        <button id="btn-new-doc" type="button" class="btn btn-small">新規作成</button>
+        <button id="btn-save-doc" type="button" class="btn btn-primary">保存</button>
+        <button id="btn-print" type="button" class="btn">印刷 / PDF保存</button>
+      </div>
+    </div>
+
+    <div class="preview-pane">
+      <div class="sheet" id="sheet">
+        <div class="sheet-header">
+          <div class="sheet-title" id="sheet-title">請求書</div>
+          <div class="sheet-docno" id="sheet-docno"></div>
+        </div>
+        <div class="sheet-top">
+          <div class="sheet-client">
+            <div class="sheet-client-name" id="sheet-client-name"></div>
+            <div id="sheet-client-address"></div>
+            <div id="sheet-estimate-expiry" hidden></div>
+            <div id="sheet-due-date"></div>
+          </div>
+          <div class="sheet-issuer">
+            <img id="sheet-logo" class="sheet-logo" hidden alt="ロゴ">
+            <div id="sheet-issuer-name"></div>
+            <div id="sheet-issuer-address"></div>
+            <div id="sheet-issuer-tel"></div>
+            <div id="sheet-issuer-invoiceno"></div>
+            <img id="sheet-seal" class="sheet-seal" hidden alt="角印">
+          </div>
+        </div>
+        <div class="sheet-grand">
+          <span id="sheet-grand-label">ご請求金額</span>
+          <span id="sheet-grand-amount">¥0</span>
+        </div>
+        <table class="sheet-items">
+          <thead><tr><th>品名</th><th>数量</th><th>単価</th><th>金額</th></tr></thead>
+          <tbody id="sheet-items-tbody"></tbody>
+        </table>
+        <table class="sheet-taxbreakdown" id="sheet-taxbreakdown">
+          <thead><tr><th>税率区分</th><th>対象金額</th><th>消費税額</th></tr></thead>
+          <tbody id="sheet-taxbreakdown-tbody"></tbody>
+        </table>
+        <div class="sheet-totals">
+          <div><span>小計</span><span id="sheet-subtotal">¥0</span></div>
+          <div><span>消費税</span><span id="sheet-tax">¥0</span></div>
+          <div id="sheet-withholding-row" hidden><span>源泉徴収</span><span id="sheet-withholding">¥0</span></div>
+          <div id="sheet-taxmode-note" class="sheet-taxmode-note" hidden>（内税）</div>
+        </div>
+        <div class="sheet-receipt-reason" id="sheet-receipt-reason" hidden>
+          但し　<span id="sheet-receipt-note"></span>　として<br>上記正に領収いたしました。
+        </div>
+        <div class="sheet-bank" id="sheet-bank"></div>
+        <div class="sheet-note" id="sheet-note"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 履歴タブ ============ -->
+<section id="view-history" class="view" data-view="history" hidden>
+  <div class="view-toolbar">
+    <input id="history-search" type="search" placeholder="取引先名・文書番号・年月で検索（Pro）" hidden>
+    <span id="history-count" class="count-text"></span>
+  </div>
+  <div id="history-list" class="card-list"></div>
+</section>
+
+<!-- ============ 取引先タブ ============ -->
+<section id="view-clients" class="view" data-view="clients" hidden>
+  <div class="view-toolbar">
+    <span id="clients-count" class="count-text"></span>
+  </div>
+  <div id="clients-list" class="card-list"></div>
+  <fieldset class="field-group">
+    <legend>取引先を追加</legend>
+    <label for="c-name">会社名・氏名</label>
+    <input id="c-name" type="text">
+    <label for="c-honorific">敬称</label>
+    <select id="c-honorific">
+      <option value="御中">御中</option>
+      <option value="様">様</option>
+      <option value="">（なし）</option>
+    </select>
+    <label for="c-zip">郵便番号</label>
+    <input id="c-zip" type="text">
+    <label for="c-address">住所</label>
+    <input id="c-address" type="text">
+    <label for="c-person">ご担当者</label>
+    <input id="c-person" type="text">
+    <input type="hidden" id="c-edit-id">
+    <button id="btn-add-client" type="button" class="btn btn-primary">保存</button>
+    <button id="btn-cancel-client-edit" type="button" class="btn btn-small" hidden>編集をキャンセル</button>
+  </fieldset>
+</section>
+
+<!-- ============ 設定タブ ============ -->
+<section id="view-settings" class="view" data-view="settings" hidden>
+  <fieldset class="field-group">
+    <legend>発行者情報（自社）</legend>
+    <label for="s-issuer-name">名称</label>
+    <input id="s-issuer-name" type="text">
+    <label for="s-issuer-zip">郵便番号</label>
+    <input id="s-issuer-zip" type="text">
+    <label for="s-issuer-address">住所</label>
+    <input id="s-issuer-address" type="text">
+    <label for="s-issuer-tel">電話番号</label>
+    <input id="s-issuer-tel" type="text">
+    <label for="s-issuer-email">メールアドレス</label>
+    <input id="s-issuer-email" type="email">
+    <label for="s-issuer-invoiceno">インボイス登録番号</label>
+    <input id="s-issuer-invoiceno" type="text" placeholder="T1234567890123">
+    <button id="btn-save-issuer" type="button" class="btn btn-primary">保存</button>
+  </fieldset>
+
+  <fieldset class="field-group">
+    <legend>振込先</legend>
+    <div id="banks-list" class="card-list"></div>
+    <label for="s-bank-label">振込先を追加（銀行名・支店・口座種別・口座番号・名義をまとめて1行で）</label>
+    <input id="s-bank-label" type="text" placeholder="みずほ銀行 渋谷支店 普通 1234567 ヤマダタロウ">
+    <button id="btn-add-bank" type="button" class="btn">追加</button>
+  </fieldset>
+
+  <fieldset class="field-group">
+    <legend>Pro版</legend>
+    <p id="pro-status-text">未解除です。</p>
+    <label for="s-pro-code">アンロックコード</label>
+    <input id="s-pro-code" type="text" placeholder="SGSK-XXXX-XXXX">
+    <button id="btn-activate-pro" type="button" class="btn btn-accent">有効化</button>
+    <p id="pro-activate-message" class="warning-text" hidden></p>
+  </fieldset>
+
+  <fieldset class="field-group" id="pro-settings-group" hidden>
+    <legend>自動採番（Pro）</legend>
+    <label for="s-num-prefix">プレフィックス</label>
+    <input id="s-num-prefix" type="text" placeholder="INV-{YYYY}-">
+    <label for="s-num-next">次の連番</label>
+    <input id="s-num-next" type="number" min="1">
+    <label for="s-num-pad">桁数</label>
+    <input id="s-num-pad" type="number" min="1" max="8">
+    <button id="btn-save-numbering" type="button" class="btn">保存</button>
+  </fieldset>
+
+  <fieldset class="field-group" id="pro-logo-group" hidden>
+    <legend>ロゴ・角印（Pro）</legend>
+    <label for="s-logo-file">ロゴ画像（PNG/JPEG）</label>
+    <input id="s-logo-file" type="file" accept="image/png,image/jpeg">
+    <button id="btn-clear-logo" type="button" class="btn btn-small">ロゴを削除</button>
+    <label for="s-seal-file">角印画像（PNG推奨・透過）</label>
+    <input id="s-seal-file" type="file" accept="image/png,image/jpeg">
+    <button id="btn-clear-seal" type="button" class="btn btn-small">角印を削除</button>
+    <p id="logo-error" class="warning-text" hidden></p>
+  </fieldset>
+
+  <fieldset class="field-group" id="pro-backup-group" hidden>
+    <legend>バックアップ（Pro）</legend>
+    <button id="btn-export-json" type="button" class="btn">全データをJSONで書き出し</button>
+    <label for="s-import-file">JSONファイルから復元</label>
+    <input id="s-import-file" type="file" accept="application/json">
+  </fieldset>
+
+  <fieldset class="field-group">
+    <legend>データの初期化</legend>
+    <button id="btn-reset-all" type="button" class="btn btn-danger">すべてのデータを消去</button>
+  </fieldset>
+</section>
+
+<!-- ============ SEO静的セクション ============ -->
+<section class="seo-content">
+  <h1>登録不要で今すぐ請求書が作れる「スグ請求」</h1>
+  <p id="privacy">「スグ請求」は会員登録なしでその場で使える請求書作成ツールです。入力したデータはお使いのブラウザにのみ保存され、サーバーには一切送信されません。源泉徴収税額（100万円超の段階計算）や消費税・インボイス税率区分の計算も自動で行います。</p>
+
+  <h2 id="usage">使い方3ステップ</h2>
+  <ol>
+    <li>「作成」タブで発行者情報・宛先・品目を入力すると、右側にA4サイズの請求書プレビューがリアルタイムで表示されます。</li>
+    <li>源泉徴収の有無や税率区分を選ぶと、金額が自動で再計算されます。</li>
+    <li>「印刷 / PDF保存」ボタンからブラウザの印刷機能でPDF保存・印刷ができます。</li>
+  </ol>
+
+  <h2>源泉徴収の計算方法</h2>
+  <p>個人（フリーランス）への報酬支払いに対する源泉徴収税額は、原則として次の計算式で求められます。</p>
+  <ul>
+    <li>支払金額が100万円以下の場合：<strong>支払金額 × 10.21%</strong></li>
+    <li>支払金額が100万円を超える場合：<strong>（支払金額 − 100万円）× 20.42% + 102,100円</strong></li>
+  </ul>
+  <p>例えば税抜合計150万円の場合、源泉徴収税額は (150万円 − 100万円) × 20.42% + 102,100円 = 204,200円となります。本ツールはこの計算をフォーム入力に応じて自動で行います。</p>
+
+  <h2>インボイス制度で請求書に必要な記載事項</h2>
+  <p>適格請求書（インボイス）として認められるためには、一般的に以下の項目の記載が必要とされています。</p>
+  <ul>
+    <li>発行者の氏名または名称、および登録番号</li>
+    <li>取引年月日</li>
+    <li>取引内容（軽減税率対象品目である場合はその旨）</li>
+    <li>税率ごとに区分して合計した対価の額および適用税率</li>
+    <li>税率ごとに区分した消費税額等</li>
+    <li>書類の交付を受ける事業者の氏名または名称</li>
+  </ul>
+  <p>「スグ請求」では発行者情報にインボイス登録番号欄を設け、税率区分ごとの対象金額・消費税額の内訳表を自動生成します。</p>
+
+  <h2 id="faq">よくある質問</h2>
+  <dl class="faq">
+    <dt>データはどこに保存されますか？</dt>
+    <dd>入力したデータはすべてお使いのブラウザのlocalStorageにのみ保存され、サーバーには一切送信されません。</dd>
+    <dt>会員登録は必要ですか？</dt>
+    <dd>不要です。ページを開いてすぐに請求書の作成を始められます。</dd>
+    <dt>スマートフォンでも使えますか？</dt>
+    <dd>使えます。画面幅に応じてレイアウトが自動的に切り替わります。印刷・PDF保存はブラウザの印刷機能をご利用ください。</dd>
+    <dt>源泉徴収税額はどう計算していますか？</dt>
+    <dd>税抜合計が100万円以下なら10.21%、100万円を超える部分は20.42%で計算する段階計算式に対応しています。</dd>
+    <dt>Pro版とは何ですか？</dt>
+    <dd>見積書・納品書・領収書への切替、取引先・履歴の無制限保存、自動採番、ロゴ挿入などが使える買い切り版です。設定タブからアンロックコードを購入・入力できます。</dd>
+    <dt>作成したデータが消えないか心配です</dt>
+    <dd>ブラウザのデータを消去すると内容も消えます。設定タブのバックアップ機能（Pro）でJSONファイルに書き出し、いつでも復元できます。</dd>
+  </dl>
+</section>
+
+<footer class="app-footer">
+  <a href="#" id="footer-link-usage">使い方</a>
+  <a href="#" id="footer-link-faq">よくある質問</a>
+  <a href="#" id="footer-link-privacy">プライバシー</a>
+  <span>運営者連絡先: heriumu111@gmail.com</span>
+  <a href="https://koakinaidougu.booth.pm/items/8611543" target="_blank" rel="noopener noreferrer">Pro版はBOOTHで購入</a>
+</footer>
+
+<!-- Pro案内モーダル -->
+<div id="pro-modal" class="modal-overlay" hidden>
+  <div class="modal-box">
+    <h2>Pro版でできること</h2>
+    <ul>
+      <li>見積書・納品書・領収書への切替、見積書→請求書のワンクリック変換</li>
+      <li>取引先・履歴の保存件数が無制限に</li>
+      <li>文書番号の自動採番</li>
+      <li>ロゴ・角印画像の挿入</li>
+      <li>振込先の複数登録</li>
+      <li>全データのJSONバックアップ・復元</li>
+    </ul>
+    <p>買い切り980円のアンロックコードをBOOTHで購入し、設定タブから入力すると解除されます。</p>
+    <div class="modal-actions">
+      <a href="https://koakinaidougu.booth.pm/items/8611543" target="_blank" rel="noopener noreferrer" class="btn btn-accent">BOOTHで購入する</a>
+      <button id="btn-close-pro-modal" type="button" class="btn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- 品目行テンプレート -->
+<template id="item-row-template">
+  <tr class="item-row">
+    <td><input type="text" class="item-name" placeholder="品名"></td>
+    <td><input type="number" class="item-qty" value="1" min="0" step="0.01"></td>
+    <td><input type="number" class="item-price" value="0" min="0" step="1"></td>
+    <td>
+      <select class="item-tax">
+        <option value="r10">10%</option>
+        <option value="r8">8%(軽減)</option>
+        <option value="r0">対象外</option>
+      </select>
+    </td>
+    <td class="item-controls">
+      <button type="button" class="btn btn-tiny item-up" title="上へ">↑</button>
+      <button type="button" class="btn btn-tiny item-down" title="下へ">↓</button>
+      <button type="button" class="btn btn-tiny item-del" title="削除">×</button>
+    </td>
+  </tr>
+</template>
+
+<script src="app.js"></script>
+</body>
+</html>
